@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Lamumu Bros</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #5C94FC;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 1000px;
+            height: 600px;
+            background: #5C94FC;
+            border: 4px solid #000;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            image-rendering: pixelated;
+        }
+        
+        #gameCanvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        .ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 2px 2px 0px #000;
+            font-size: 16px;
+        }
+        
+        .ball-counter {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 8px;
+            border: 2px solid #fff;
+        }
+        
+        .ball-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+            border: 1px solid #000;
+        }
+        
+        .red-ball { background: #FF4444; }
+        .blue-ball { background: #4444FF; }
+        .pink-ball { background: #FF69B4; }
+        
+        .start-screen, .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+        }
+        
+        .start-screen h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #FFD700;
+            text-shadow: 3px 3px 0px #000;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 1.2em;
+            background: #FF4444;
+            color: white;
+            border: 3px solid #000;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin: 10px;
+            text-shadow: 1px 1px 0px #000;
+        }
+        
+        button:hover {
+            background: #FF6666;
+        }
+        
+        .instructions {
+            text-align: center;
+            margin: 20px;
+            line-height: 1.6;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border: 2px solid #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="ui">
+            <div>
+                <span class="ball-counter">
+                    <div class="ball-icon red-ball"></div>
+                    <span id="redBalls">0</span>
+                </span>
+                <span class="ball-counter">
+                    <div class="ball-icon blue-ball"></div>
+                    <span id="blueBalls">0</span>
+                </span>
+                <span class="ball-counter">
+                    <div class="ball-icon pink-ball"></div>
+                    <span id="pinkBalls">0</span>
+                </span>
+            </div>
+            <div>SCORE: <span id="score">0</span></div>
+            <div>LIVES: <span id="lives">3</span></div>
+        </div>
+        
+        <div class="start-screen" id="startScreen">
+            <h1>SUPER LAMUMU BROS</h1>
+            <div class="instructions">
+                <p>Help Lamumu collect colorful balls and reach home!</p>
+                <p>Hit blocks from below to release balls</p>
+                <p>Red = 10 pts | Blue = 20 pts | Pink = 50 pts</p>
+                <br>
+                <p>CONTROLS: Arrow Keys or WASD</p>
+                <p>JUMP: Space, W, or Up Arrow</p>
+                <br>
+                <p style="color: #FFD700;">BEWARE: Red enemies have spikes!</p>
+                <p style="color: #FF6B6B;">Gray cannons shoot at you!</p>
+                <p style="color: #FF69B4;">Pink platforms disappear when stepped on!</p>
+                <p style="color: #32CD32;">Green enemies jump around!</p>
+                <br>
+                <p style="color: #FFA500; font-weight: bold;">This is a much longer and harder adventure!</p>
+            </div>
+            <button id="startBtn">START GAME</button>
+        </div>
+        
+        <div class="game-over" id="gameOver" style="display: none;">
+            <h1>GAME OVER</h1>
+            <div style="margin: 20px; text-align: center;">
+                <div>FINAL SCORE: <span id="finalScore">0</span></div>
+                <div>RED: <span id="finalRed">0</span> | BLUE: <span id="finalBlue">0</span> | PINK: <span id="finalPink">0</span></div>
+            </div>
+            <button id="restartBtn">PLAY AGAIN</button>
+        </div>
+        
+        <div class="game-over" id="gameWin" style="display: none;">
+            <h1 style="color: #32CD32;">CONGRATULATIONS!</h1>
+            <div style="margin: 20px; text-align: center; color: #32CD32;">
+                <div style="font-size: 1.5em; margin: 10px;">LAMUMU FOUND THE COZY STABLE!</div>
+                <div>FINAL SCORE: <span id="winScore">0</span></div>
+                <div>RED: <span id="winRed">0</span> | BLUE: <span id="winBlue">0</span> | PINK: <span id="winPink">0</span></div>
+                <div style="margin: 15px; font-size: 1.2em;">YOU ARE A HERO COW!</div>
+            </div>
+            <button id="winRestartBtn" style="background: #32CD32;">PLAY AGAIN</button>
+        </div>
+        
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        
+        function drawCustomBackground() {
+            // Green grass gradient background (from the previous version)
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');  // Sky blue at top
+            gradient.addColorStop(0.4, '#98FB98'); // Light green
+            gradient.addColorStop(1, '#228B22');   // Grass green at bottom
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add some grass texture in the lower portion
+            ctx.fillStyle = 'rgba(34, 139, 34, 0.2)';
+            for (let x = 0; x < canvas.width; x += 25) {
+                for (let y = canvas.height * 0.6; y < canvas.height; y += 18) {
+                    const grassX = x + Math.sin(y * 0.1) * 8;
+                    ctx.fillRect(grassX, y, 2, 6);
+                    ctx.fillRect(grassX + 5, y - 2, 2, 4);
+                    ctx.fillRect(grassX + 10, y + 1, 2, 5);
+                }
+            }
+            
+            // Create the blue dot pattern (with reduced opacity to blend with green)
+            const dotSpacing = 40;
+            const dotSize = 10;
+            const offsetX = (camera.x * 0.1) % dotSpacing;
+            
+            ctx.fillStyle = 'rgba(70, 130, 180, 0.4)'; // Semi-transparent steel blue dots
+            
+            // Draw blue dots in a grid pattern
+            for (let x = -offsetX; x < canvas.width + dotSpacing; x += dotSpacing) {
+                for (let y = 0; y < canvas.height + dotSpacing; y += dotSpacing) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, dotSize / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Add the signature logo elements scattered throughout
+            const logoSpacing = 400;
+            const logoOffsetX = (camera.x * 0.05) % logoSpacing;
+            
+            for (let x = -logoOffsetX - 200; x < canvas.width + logoSpacing; x += logoSpacing) {
+                for (let y = 100; y < canvas.height - 100; y += 300) {
+                    const randomX = x + (Math.sin(x * 0.01 + y * 0.01) * 50);
+                    const randomY = y + (Math.cos(x * 0.01 + y * 0.01) * 30);
+                    
+                    if (randomX > -100 && randomX < canvas.width + 100) {
+                        drawBackgroundLogo(randomX, randomY);
+                    }
+                }
+            }
+        }
+        
+        function drawBackgroundLogo(centerX, centerY) {
+            const size = 50;
+            
+            // Draw the three overlapping circles (with reduced opacity to blend with green background)
+            ctx.globalAlpha = 0.5;
+            
+            // Red circle
+            ctx.fillStyle = '#FF4444';
+            ctx.beginPath();
+            ctx.arc(centerX - 12, centerY, size / 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Blue circle
+            ctx.fillStyle = '#4444FF';
+            ctx.beginPath();
+            ctx.arc(centerX + 12, centerY - 8, size / 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Pink circle
+            ctx.fillStyle = '#FF69B4';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + 12, size / 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Black center overlap
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + 2, size / 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.globalAlpha = 1.0;
+            
+            // Add some additional blue dots around the logo (more transparent)
+            ctx.fillStyle = 'rgba(70, 130, 180, 0.3)';
+            const numDots = 6;
+            for (let i = 0; i < numDots; i++) {
+                const angle = (i / numDots) * Math.PI * 2;
+                const radius = size * 0.7 + Math.sin(Date.now() * 0.002 + i) * 8;
+                const dotX = centerX + Math.cos(angle) * radius;
+                const dotY = centerY + Math.sin(angle) * radius;
+                
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        let gameState = 'start';
+        let camera = { x: 0, y: 0 };
+        let score = 0;
+        let lives = 3;
+        let ballCounts = { red: 0, blue: 0, pink: 0 };
+        let gameWon = false;
+        let cowEntering = false;
+        let enteringAnimation = 0;
+        
+        const player = {
+            x: 100, y: 450, width: 32, height: 32,
+            velX: 0, velY: 0, speed: 5, jumpPower: 15,
+            onGround: false, facingRight: true
+        };
+        
+        let platforms = [];
+        let bricks = [];
+        let balls = [];
+        let enemies = [];
+        let floatingScores = [];
+        let levelEnd = null;
+        let movingPlatforms = [];
+        let obstacles = [];
+        let projectiles = [];
+        let disappearingPlatforms = [];
+        
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+        document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('winRestartBtn').addEventListener('click', restartGame);
+        
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+            gameLoop();
+        }
+        
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('gameWin').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+            gameLoop(); // Restart the game loop
+        }
+        
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            ballCounts = { red: 0, blue: 0, pink: 0 };
+            player.x = 100;
+            player.y = 450;
+            player.velX = 0;
+            player.velY = 0;
+            camera.x = 0;
+            gameWon = false;
+            cowEntering = false;
+            enteringAnimation = 0;
+            
+            platforms = [];
+            bricks = [];
+            balls = [];
+            enemies = [];
+            floatingScores = [];
+            movingPlatforms = [];
+            obstacles = [];
+            projectiles = [];
+            disappearingPlatforms = [];
+            
+            generateLevel();
+            updateUI();
+        }
+        
+        function generateLevel() {
+            // Ground platforms (extended level)
+            for (let i = 0; i < 200; i++) {
+                platforms.push({
+                    x: i * 32, y: 568, width: 32, height: 32, type: 'ground'
+                });
+            }
+            
+            // Floating platforms (much longer and more challenging)
+            const platformData = [
+                { x: 320, y: 480, width: 3 },
+                { x: 450, y: 420, width: 2 },
+                { x: 600, y: 360, width: 3 },
+                { x: 780, y: 450, width: 2 },
+                { x: 950, y: 380, width: 3 },
+                { x: 1150, y: 320, width: 2 },
+                { x: 1350, y: 400, width: 2 },
+                { x: 1520, y: 350, width: 1 },
+                { x: 1650, y: 280, width: 2 },
+                { x: 1820, y: 450, width: 1 },
+                { x: 1950, y: 380, width: 2 },
+                { x: 2120, y: 320, width: 1 },
+                { x: 2280, y: 400, width: 2 },
+                { x: 2450, y: 350, width: 1 },
+                { x: 2600, y: 280, width: 2 },
+                { x: 2780, y: 480, width: 3 },
+                { x: 2950, y: 380, width: 1 },
+                { x: 3100, y: 320, width: 2 },
+                { x: 3280, y: 450, width: 1 },
+                { x: 3420, y: 350, width: 2 },
+                { x: 3600, y: 280, width: 1 },
+                { x: 3750, y: 400, width: 2 },
+                { x: 3920, y: 320, width: 3 },
+                { x: 4120, y: 450, width: 2 },
+                { x: 4300, y: 380, width: 1 },
+                { x: 4450, y: 280, width: 2 },
+                { x: 4620, y: 450, width: 3 },
+                { x: 4820, y: 350, width: 1 },
+                { x: 4950, y: 280, width: 2 },
+                { x: 5150, y: 400, width: 4 },
+                { x: 5380, y: 320, width: 2 },
+                { x: 5550, y: 450, width: 3 },
+                { x: 5750, y: 380, width: 1 },
+                { x: 5900, y: 280, width: 2 },
+                { x: 6100, y: 480, width: 5 }
+            ];
+            
+            for (let p of platformData) {
+                for (let i = 0; i < p.width; i++) {
+                    platforms.push({
+                        x: p.x + i * 32, y: p.y, width: 32, height: 32, type: 'grass'
+                    });
+                }
+            }
+            
+            // Question blocks (extended throughout the longer level)
+            const brickData = [
+                { x: 256, y: 430, balls: ['red', 'blue'] },
+                { x: 288, y: 430, balls: ['red'] },
+                { x: 416, y: 370, balls: ['blue', 'pink'] },
+                { x: 576, y: 310, balls: ['pink'] },
+                { x: 736, y: 400, balls: ['blue', 'red'] },
+                { x: 896, y: 330, balls: ['pink', 'blue'] },
+                { x: 1096, y: 270, balls: ['red', 'pink', 'blue'] },
+                { x: 1296, y: 350, balls: ['blue', 'red'] },
+                { x: 1466, y: 300, balls: ['pink', 'blue'] },
+                { x: 1596, y: 230, balls: ['pink', 'red', 'pink'] },
+                { x: 1766, y: 400, balls: ['blue', 'pink'] },
+                { x: 1896, y: 330, balls: ['red', 'blue', 'pink'] },
+                { x: 2066, y: 270, balls: ['pink', 'pink'] },
+                { x: 2226, y: 350, balls: ['red', 'blue'] },
+                { x: 2396, y: 300, balls: ['pink', 'blue', 'red'] },
+                { x: 2546, y: 230, balls: ['pink', 'pink', 'pink'] },
+                { x: 2726, y: 430, balls: ['red', 'blue', 'pink'] },
+                { x: 2896, y: 330, balls: ['pink', 'red'] },
+                { x: 3046, y: 270, balls: ['blue', 'pink', 'blue'] },
+                { x: 3226, y: 400, balls: ['pink', 'pink'] },
+                { x: 3366, y: 300, balls: ['red', 'blue', 'pink'] },
+                { x: 3546, y: 230, balls: ['pink', 'red', 'blue'] },
+                { x: 3696, y: 350, balls: ['blue', 'pink', 'red'] },
+                { x: 3866, y: 270, balls: ['pink', 'pink', 'pink'] },
+                { x: 4066, y: 400, balls: ['red', 'blue'] },
+                { x: 4246, y: 330, balls: ['pink', 'blue', 'pink'] },
+                { x: 4396, y: 230, balls: ['pink', 'red', 'pink', 'blue'] },
+                { x: 4566, y: 400, balls: ['blue', 'pink', 'red'] },
+                { x: 4766, y: 300, balls: ['pink', 'pink'] },
+                { x: 4896, y: 230, balls: ['red', 'blue', 'pink', 'pink'] },
+                { x: 5096, y: 350, balls: ['pink', 'blue', 'pink'] },
+                { x: 5326, y: 270, balls: ['pink', 'pink', 'pink'] },
+                { x: 5496, y: 400, balls: ['red', 'blue', 'pink', 'red'] },
+                { x: 5696, y: 330, balls: ['pink', 'blue', 'pink'] },
+                { x: 5846, y: 230, balls: ['pink', 'pink', 'pink', 'pink'] },
+                { x: 6046, y: 430, balls: ['pink', 'pink', 'pink', 'pink', 'pink'] }
+            ];
+            
+            for (let b of brickData) {
+                bricks.push({
+                    x: b.x, y: b.y, width: 32, height: 32,
+                    balls: [...b.balls], hit: false
+                });
+            }
+            
+            // Enemies with different types (much more challenging and longer)
+            const enemyPositions = [
+                { x: 380, y: 536, type: 'goomba' },
+                { x: 520, y: 536, type: 'goomba' },
+                { x: 680, y: 536, type: 'spiky' },
+                { x: 820, y: 536, type: 'fast' },
+                { x: 980, y: 536, type: 'goomba' },
+                { x: 1120, y: 536, type: 'spiky' },
+                { x: 1280, y: 536, type: 'cannon' },
+                { x: 1420, y: 536, type: 'goomba' },
+                { x: 1580, y: 536, type: 'fast' },
+                { x: 1720, y: 536, type: 'spiky' },
+                { x: 1880, y: 536, type: 'cannon' },
+                { x: 2020, y: 536, type: 'goomba' },
+                { x: 2180, y: 536, type: 'fast' },
+                { x: 2320, y: 536, type: 'spiky' },
+                { x: 2480, y: 536, type: 'cannon' },
+                { x: 2620, y: 536, type: 'jumper' },
+                { x: 2780, y: 536, type: 'goomba' },
+                { x: 2920, y: 536, type: 'fast' },
+                { x: 3080, y: 536, type: 'spiky' },
+                { x: 3220, y: 536, type: 'cannon' },
+                { x: 3380, y: 536, type: 'jumper' },
+                { x: 3520, y: 536, type: 'fast' },
+                { x: 3680, y: 536, type: 'spiky' },
+                { x: 3820, y: 536, type: 'cannon' },
+                { x: 3980, y: 536, type: 'jumper' },
+                { x: 4120, y: 536, type: 'goomba' },
+                { x: 4280, y: 536, type: 'fast' },
+                { x: 4420, y: 536, type: 'spiky' },
+                { x: 4580, y: 536, type: 'cannon' },
+                { x: 4720, y: 536, type: 'jumper' },
+                { x: 4880, y: 536, type: 'fast' },
+                { x: 5020, y: 536, type: 'spiky' },
+                { x: 5180, y: 536, type: 'cannon' },
+                { x: 5320, y: 536, type: 'jumper' },
+                { x: 5480, y: 536, type: 'fast' },
+                { x: 5620, y: 536, type: 'spiky' },
+                { x: 5780, y: 536, type: 'cannon' },
+                { x: 5920, y: 536, type: 'jumper' },
+                { x: 6080, y: 536, type: 'fast' },
+                { x: 6220, y: 536, type: 'spiky' }
+            ];
+            for (let e of enemyPositions) {
+                enemies.push({
+                    x: e.x, y: e.y, width: 32, height: 32,
+                    velX: e.type === 'fast' ? -2.5 : e.type === 'cannon' ? 0 : e.type === 'jumper' ? -1.5 : -1, 
+                    velY: e.type === 'jumper' ? 0 : 0,
+                    active: true, type: e.type,
+                    shootTimer: e.type === 'cannon' ? Math.random() * 180 : 0,
+                    jumpTimer: e.type === 'jumper' ? Math.random() * 120 : 0,
+                    onGround: true
+                });
+            }
+            
+            // Moving platforms (more challenging and throughout level)
+            movingPlatforms = [
+                { x: 1300, y: 350, width: 64, height: 16, velX: 2, minX: 1200, maxX: 1400 },
+                { x: 1700, y: 300, width: 48, height: 16, velX: -2.5, minX: 1600, maxX: 1800 },
+                { x: 2200, y: 250, width: 64, height: 16, velX: 1.5, minX: 2100, maxX: 2350 },
+                { x: 2700, y: 400, width: 48, height: 16, velX: -3, minX: 2600, maxX: 2800 },
+                { x: 3200, y: 300, width: 64, height: 16, velX: 2, minX: 3100, maxX: 3300 },
+                { x: 3700, y: 350, width: 48, height: 16, velX: -2.5, minX: 3600, maxX: 3800 },
+                { x: 4200, y: 280, width: 64, height: 16, velX: 1.8, minX: 4100, maxX: 4350 },
+                { x: 4700, y: 400, width: 48, height: 16, velX: -3, minX: 4600, maxX: 4800 },
+                { x: 5200, y: 250, width: 64, height: 16, velX: 2.2, minX: 5100, maxX: 5400 },
+                { x: 5700, y: 350, width: 48, height: 16, velX: -2.8, minX: 5600, maxX: 5850 }
+            ];
+            
+            // Disappearing platforms (more throughout level)
+            disappearingPlatforms = [
+                { x: 600, y: 400, width: 64, height: 16, visible: true, timer: 0 },
+                { x: 1000, y: 320, width: 48, height: 16, visible: true, timer: 0 },
+                { x: 1500, y: 280, width: 64, height: 16, visible: true, timer: 0 },
+                { x: 1900, y: 350, width: 48, height: 16, visible: true, timer: 0 },
+                { x: 2400, y: 280, width: 64, height: 16, visible: true, timer: 0 },
+                { x: 2900, y: 320, width: 48, height: 16, visible: true, timer: 0 },
+                { x: 3400, y: 280, width: 64, height: 16, visible: true, timer: 0 },
+                { x: 3900, y: 350, width: 48, height: 16, visible: true, timer: 0 },
+                { x: 4400, y: 320, width: 64, height: 16, visible: true, timer: 0 },
+                { x: 4900, y: 280, width: 48, height: 16, visible: true, timer: 0 },
+                { x: 5400, y: 350, width: 64, height: 16, visible: true, timer: 0 },
+                { x: 5900, y: 320, width: 48, height: 16, visible: true, timer: 0 }
+            ];
+            
+            // More spikes and obstacles (throughout the extended level)
+            obstacles = [
+                { x: 400, y: 540, width: 32, height: 28, type: 'spikes' },
+                { x: 600, y: 540, width: 64, height: 28, type: 'spikes' },
+                { x: 900, y: 540, width: 32, height: 28, type: 'spikes' },
+                { x: 1200, y: 540, width: 96, height: 28, type: 'spikes' },
+                { x: 1500, y: 540, width: 48, height: 28, type: 'spikes' },
+                { x: 1800, y: 540, width: 64, height: 28, type: 'spikes' },
+                { x: 2100, y: 540, width: 32, height: 28, type: 'spikes' },
+                { x: 2400, y: 540, width: 96, height: 28, type: 'spikes' },
+                { x: 2700, y: 540, width: 48, height: 28, type: 'spikes' },
+                { x: 3000, y: 540, width: 64, height: 28, type: 'spikes' },
+                { x: 3300, y: 540, width: 32, height: 28, type: 'spikes' },
+                { x: 3600, y: 540, width: 96, height: 28, type: 'spikes' },
+                { x: 3900, y: 540, width: 48, height: 28, type: 'spikes' },
+                { x: 4200, y: 540, width: 64, height: 28, type: 'spikes' },
+                { x: 4500, y: 540, width: 32, height: 28, type: 'spikes' },
+                { x: 4800, y: 540, width: 96, height: 28, type: 'spikes' },
+                { x: 5100, y: 540, width: 48, height: 28, type: 'spikes' },
+                { x: 5400, y: 540, width: 64, height: 28, type: 'spikes' },
+                { x: 5700, y: 540, width: 32, height: 28, type: 'spikes' },
+                { x: 6000, y: 540, width: 96, height: 28, type: 'spikes' }
+            ];
+            
+            // Level end - Stable (moved to end of extended level)
+            levelEnd = {
+                stable: { x: 6350, y: 400, width: 200, height: 168 },
+                door: { x: 6420, y: 480, width: 60, height: 88, open: false },
+                sign: { x: 6300, y: 450 },
+                hay: [
+                    { x: 6370, y: 550 },
+                    { x: 6400, y: 545 },
+                    { x: 6430, y: 548 },
+                    { x: 6460, y: 552 },
+                    { x: 6490, y: 547 }
+                ]
+            };
+        }
+        
+        function update() {
+            if (gameState !== 'playing') return;
+            
+            if (cowEntering) {
+                enteringAnimation++;
+                player.x += 2;
+                if (enteringAnimation > 30) {
+                    winGame();
+                }
+                return;
+            }
+            
+            // Player input
+            if (keys['a'] || keys['arrowleft']) {
+                player.velX = -player.speed;
+                player.facingRight = false;
+            } else if (keys['d'] || keys['arrowright']) {
+                player.velX = player.speed;
+                player.facingRight = true;
+            } else {
+                player.velX *= 0.8;
+            }
+            
+            if ((keys['w'] || keys['arrowup'] || keys[' ']) && player.onGround) {
+                player.velY = -player.jumpPower;
+                player.onGround = false;
+            }
+            
+            // Physics
+            player.velY += 0.5;
+            player.x += player.velX;
+            player.y += player.velY;
+            
+            // Platform collision
+            player.onGround = false;
+            
+            for (let platform of platforms) {
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    
+                    if (player.velY > 0 && player.y < platform.y) {
+                        player.y = platform.y - player.height;
+                        player.velY = 0;
+                        player.onGround = true;
+                    }
+                }
+            }
+            
+            // Moving platforms
+            for (let platform of movingPlatforms) {
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    
+                    if (player.velY > 0 && player.y < platform.y) {
+                        player.y = platform.y - player.height;
+                        player.velY = 0;
+                        player.onGround = true;
+                        player.x += platform.velX;
+                    }
+                }
+            }
+            
+            // Disappearing platforms
+            for (let platform of disappearingPlatforms) {
+                if (platform.visible &&
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    
+                    if (player.velY > 0 && player.y < platform.y) {
+                        player.y = platform.y - player.height;
+                        player.velY = 0;
+                        player.onGround = true;
+                    }
+                }
+            }
+            
+            // Update moving platforms
+            for (let platform of movingPlatforms) {
+                platform.x += platform.velX;
+                if (platform.x <= platform.minX || platform.x + platform.width >= platform.maxX) {
+                    platform.velX *= -1;
+                }
+            }
+            
+            // Obstacle collision
+            for (let obstacle of obstacles) {
+                if (player.x < obstacle.x + obstacle.width &&
+                    player.x + player.width > obstacle.x &&
+                    player.y < obstacle.y + obstacle.height &&
+                    player.y + player.height > obstacle.y) {
+                    takeDamage();
+                    break;
+                }
+            }
+            
+            // Brick collision
+            for (let brick of bricks) {
+                if (!brick.hit &&
+                    player.x < brick.x + brick.width &&
+                    player.x + player.width > brick.x &&
+                    player.y < brick.y + brick.height &&
+                    player.y + player.height > brick.y) {
+                    
+                    if (player.velY < 0 && player.y > brick.y) {
+                        hitBrick(brick);
+                    }
+                }
+            }
+            
+            // Ball collection
+            for (let ball of balls) {
+                if (ball.active &&
+                    player.x < ball.x + ball.width &&
+                    player.x + player.width > ball.x &&
+                    player.y < ball.y + ball.height &&
+                    player.y + player.height > ball.y) {
+                    collectBall(ball);
+                }
+            }
+            
+            // Enemy collision
+            for (let enemy of enemies) {
+                if (enemy.active &&
+                    player.x < enemy.x + enemy.width &&
+                    player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.height > enemy.y) {
+                    
+                    if (enemy.type === 'spiky') {
+                        takeDamage();
+                    } else if (player.velY > 0 && player.y < enemy.y) {
+                        enemy.active = false;
+                        player.velY = -8;
+                        addScore(enemy.type === 'fast' ? 200 : 100, enemy.x, enemy.y);
+                    } else {
+                        takeDamage();
+                    }
+                }
+            }
+            
+            // Update enemies
+            for (let enemy of enemies) {
+                if (enemy.active) {
+                    if (enemy.type === 'cannon') {
+                        enemy.shootTimer--;
+                        if (enemy.shootTimer <= 0) {
+                            // Shoot projectile at player
+                            const dx = player.x - enemy.x;
+                            const dy = player.y - enemy.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance < 400) { // Only shoot if player is close
+                                projectiles.push({
+                                    x: enemy.x + 16,
+                                    y: enemy.y + 16,
+                                    velX: (dx / distance) * 3,
+                                    velY: (dy / distance) * 3,
+                                    active: true,
+                                    width: 8,
+                                    height: 8
+                                });
+                            }
+                            enemy.shootTimer = 120 + Math.random() * 60; // Reset timer
+                        }
+                    } else if (enemy.type === 'jumper') {
+                        // Apply gravity to jumpers
+                        enemy.velY += 0.5;
+                        enemy.y += enemy.velY;
+                        
+                        // Ground collision for jumpers
+                        if (enemy.y >= 536) {
+                            enemy.y = 536;
+                            enemy.velY = 0;
+                            enemy.onGround = true;
+                        }
+                        
+                        // Jumping logic
+                        enemy.jumpTimer--;
+                        if (enemy.jumpTimer <= 0 && enemy.onGround) {
+                            enemy.velY = -12; // Jump
+                            enemy.onGround = false;
+                            enemy.jumpTimer = 90 + Math.random() * 60; // Reset jump timer
+                        }
+                        
+                        // Horizontal movement
+                        enemy.x += enemy.velX;
+                        if (enemy.x < 0 || enemy.x > 6800 - enemy.width) {
+                            enemy.velX *= -1;
+                        }
+                    } else {
+                        enemy.x += enemy.velX;
+                        if (enemy.x < 0 || enemy.x > 6800 - enemy.width) {
+                            enemy.velX *= -1;
+                        }
+                    }
+                }
+            }
+            
+            // Update projectiles
+            for (let projectile of projectiles) {
+                if (projectile.active) {
+                    projectile.x += projectile.velX;
+                    projectile.y += projectile.velY;
+                    
+                    // Remove if off screen
+                    if (projectile.x < -50 || projectile.x > 4000 || projectile.y < -50 || projectile.y > 650) {
+                        projectile.active = false;
+                    }
+                    
+                    // Check collision with player
+                    if (player.x < projectile.x + projectile.width &&
+                        player.x + player.width > projectile.x &&
+                        player.y < projectile.y + projectile.height &&
+                        player.y + player.height > projectile.y) {
+                        projectile.active = false;
+                        takeDamage();
+                    }
+                }
+            }
+            
+            // Update disappearing platforms
+            for (let platform of disappearingPlatforms) {
+                // Check if player is on platform
+                let playerOnPlatform = platform.visible &&
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y &&
+                    player.velY > 0 && player.y < platform.y;
+                
+                if (playerOnPlatform && platform.timer === 0) {
+                    platform.timer = 60; // Start disappearing timer
+                }
+                
+                if (platform.timer > 0) {
+                    platform.timer--;
+                    if (platform.timer === 0) {
+                        platform.visible = false;
+                        // Respawn after 3 seconds
+                        setTimeout(() => {
+                            platform.visible = true;
+                        }, 3000);
+                    }
+                }
+            }
+            
+            // Update balls
+            for (let ball of balls) {
+                if (ball.active) {
+                    ball.y += ball.velY;
+                    ball.velY += 0.3;
+                    
+                    if (ball.y > 536) {
+                        ball.y = 536;
+                        ball.velY = -ball.velY * 0.7;
+                    }
+                    
+                    if (ball.y > 600) ball.active = false;
+                }
+            }
+            
+            // Update floating scores
+            floatingScores = floatingScores.filter(fs => {
+                fs.y -= 2;
+                fs.life--;
+                return fs.life > 0;
+            });
+            
+            // Clean up inactive projectiles
+            projectiles = projectiles.filter(p => p.active);
+            
+            // Check win condition
+            if (levelEnd && levelEnd.door && !gameWon && !cowEntering &&
+                player.x >= levelEnd.door.x && 
+                player.x <= levelEnd.door.x + levelEnd.door.width &&
+                player.y >= levelEnd.door.y - player.height) {
+                startEnteringAnimation();
+            }
+            
+            // Camera (updated for longer level)
+            camera.x = player.x - canvas.width / 2;
+            camera.x = Math.max(0, Math.min(6800 - canvas.width, camera.x));
+            
+            if (player.y > canvas.height) takeDamage();
+            
+            updateUI();
+        }
+        
+        function hitBrick(brick) {
+            brick.hit = true;
+            for (let ballType of brick.balls) {
+                balls.push({
+                    x: brick.x + Math.random() * brick.width,
+                    y: brick.y - 20,
+                    width: 16, height: 16,
+                    type: ballType,
+                    velY: -5 - Math.random() * 3,
+                    active: true
+                });
+            }
+        }
+        
+        function collectBall(ball) {
+            ball.active = false;
+            ballCounts[ball.type]++;
+            const points = { red: 10, blue: 20, pink: 50 }[ball.type];
+            addScore(points, ball.x, ball.y);
+        }
+        
+        function addScore(points, x, y) {
+            score += points;
+            floatingScores.push({
+                x: x - camera.x, y: y, text: '+' + points, life: 60
+            });
+        }
+        
+        function startEnteringAnimation() {
+            cowEntering = true;
+            enteringAnimation = 0;
+            player.facingRight = true;
+        }
+        
+        function takeDamage() {
+            lives--;
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                player.x = 100;
+                player.y = 450;
+                player.velX = 0;
+                player.velY = 0;
+                camera.x = 0;
+            }
+        }
+        
+        function winGame() {
+            gameWon = true;
+            gameState = 'gameWin';
+            score += 1000;
+            
+            document.getElementById('winScore').textContent = score;
+            document.getElementById('winRed').textContent = ballCounts.red;
+            document.getElementById('winBlue').textContent = ballCounts.blue;
+            document.getElementById('winPink').textContent = ballCounts.pink;
+            document.getElementById('gameWin').style.display = 'flex';
+        }
+        
+        function gameOver() {
+            gameState = 'gameOver';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalRed').textContent = ballCounts.red;
+            document.getElementById('finalBlue').textContent = ballCounts.blue;
+            document.getElementById('finalPink').textContent = ballCounts.pink;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+        
+        function updateUI() {
+            document.getElementById('redBalls').textContent = ballCounts.red;
+            document.getElementById('blueBalls').textContent = ballCounts.blue;
+            document.getElementById('pinkBalls').textContent = ballCounts.pink;
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+        }
+        
+        function render() {
+            // Draw the custom background inspired by your cow logo
+            drawCustomBackground();
+            
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+            
+            for (let platform of platforms) {
+                if (platform.type === 'ground') {
+                    drawGroundBlock(platform.x, platform.y);
+                } else {
+                    drawGrassBlock(platform.x, platform.y);
+                }
+            }
+            
+            for (let platform of movingPlatforms) {
+                ctx.fillStyle = '#32CD32';
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                ctx.strokeStyle = '#228B22';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+            }
+            
+            // Draw disappearing platforms
+            for (let platform of disappearingPlatforms) {
+                if (platform.visible) {
+                    const alpha = platform.timer > 0 ? 1 - (platform.timer / 60) * 0.7 : 1;
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#FFB6C1';
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                    ctx.strokeStyle = '#FF69B4';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+                    ctx.globalAlpha = 1;
+                }
+            }
+            
+            for (let obstacle of obstacles) {
+                if (obstacle.type === 'spikes') {
+                    drawSpikes(obstacle.x, obstacle.y, obstacle.width);
+                }
+            }
+            
+            for (let brick of bricks) {
+                if (!brick.hit) {
+                    drawQuestionBlock(brick.x, brick.y);
+                } else {
+                    drawUsedBlock(brick.x, brick.y);
+                }
+            }
+            
+            for (let ball of balls) {
+                if (ball.active) drawBall(ball.x, ball.y, ball.type);
+            }
+            
+            for (let enemy of enemies) {
+                if (enemy.active) {
+                    if (enemy.type === 'goomba') {
+                        drawGoomba(enemy.x, enemy.y);
+                    } else if (enemy.type === 'spiky') {
+                        drawSpikyEnemy(enemy.x, enemy.y);
+                    } else if (enemy.type === 'fast') {
+                        drawFastEnemy(enemy.x, enemy.y);
+                    } else if (enemy.type === 'cannon') {
+                        drawCannonEnemy(enemy.x, enemy.y);
+                    } else if (enemy.type === 'jumper') {
+                        drawJumperEnemy(enemy.x, enemy.y);
+                    }
+                }
+            }
+            
+            // Draw projectiles
+            for (let projectile of projectiles) {
+                if (projectile.active) {
+                    drawProjectile(projectile.x, projectile.y);
+                }
+            }
+            
+            if (levelEnd) drawLevelEnd();
+            
+            if (!cowEntering || enteringAnimation < 20) {
+                drawLamumu(player.x, player.y, player.facingRight);
+            }
+            
+            ctx.restore();
+            
+            for (let fs of floatingScores) {
+                ctx.fillStyle = '#FFFF00';
+                ctx.font = '16px Courier New';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.strokeText(fs.text, fs.x, fs.y);
+                ctx.fillText(fs.text, fs.x, fs.y);
+            }
+        }
+        
+        function drawClouds() {
+            // Background mountains
+            ctx.fillStyle = '#90EE90';
+            for (let i = 0; i < 10; i++) {
+                const mountainX = Math.max(-200, (i * 800) - camera.x * 0.02);
+                const mountainHeight = 100 + Math.sin(i) * 40;
+                if (mountainX < canvas.width + 200) {
+                    ctx.beginPath();
+                    ctx.moveTo(mountainX, 200);
+                    ctx.lineTo(mountainX + 200, 200 - mountainHeight);
+                    ctx.lineTo(mountainX + 400, 200);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Mountain shading
+                    ctx.fillStyle = '#7CCD7C';
+                    ctx.beginPath();
+                    ctx.moveTo(mountainX + 200, 200 - mountainHeight);
+                    ctx.lineTo(mountainX + 400, 200);
+                    ctx.lineTo(mountainX + 350, 200);
+                    ctx.lineTo(mountainX + 200, 200 - mountainHeight + 20);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#90EE90';
+                }
+            }
+            
+            // Enhanced clouds with more variety
+            const cloudData = [
+                { x: Math.max(-150, 50 - camera.x * 0.08), y: 80, size: 1.2, type: 'large' },
+                { x: Math.max(-120, 200 - camera.x * 0.12), y: 100, size: 0.9, type: 'medium' },
+                { x: Math.max(-100, 400 - camera.x * 0.06), y: 60, size: 1.4, type: 'large' },
+                { x: Math.max(-130, 650 - camera.x * 0.10), y: 90, size: 0.8, type: 'small' },
+                { x: Math.max(-110, 850 - camera.x * 0.07), y: 110, size: 1.1, type: 'medium' },
+                { x: Math.max(-140, 1100 - camera.x * 0.09), y: 70, size: 1.3, type: 'large' },
+                { x: Math.max(-100, 1350 - camera.x * 0.05), y: 95, size: 0.9, type: 'medium' }
+            ];
+            
+            for (let cloud of cloudData) {
+                if (cloud.x < canvas.width + 100) {
+                    const size = cloud.size;
+                    
+                    // Main cloud body
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(cloud.x, cloud.y, 60 * size, 20 * size);
+                    ctx.fillRect(cloud.x - 6 * size, cloud.y + 10 * size, 72 * size, 20 * size);
+                    
+                    // Additional cloud puffs based on type
+                    if (cloud.type === 'large') {
+                        ctx.fillRect(cloud.x + 10 * size, cloud.y - 6 * size, 40 * size, 16 * size);
+                        ctx.fillRect(cloud.x + 20 * size, cloud.y - 10 * size, 20 * size, 12 * size);
+                        ctx.fillRect(cloud.x - 4 * size, cloud.y + 24 * size, 68 * size, 12 * size);
+                    } else if (cloud.type === 'medium') {
+                        ctx.fillRect(cloud.x + 8 * size, cloud.y - 4 * size, 32 * size, 12 * size);
+                        ctx.fillRect(cloud.x + 4 * size, cloud.y + 20 * size, 52 * size, 10 * size);
+                    } else {
+                        ctx.fillRect(cloud.x + 6 * size, cloud.y - 2 * size, 28 * size, 8 * size);
+                        ctx.fillRect(cloud.x + 2 * size, cloud.y + 18 * size, 48 * size, 8 * size);
+                    }
+                    
+                    // Cloud shading
+                    ctx.fillStyle = '#F0F8FF';
+                    ctx.fillRect(cloud.x + 2 * size, cloud.y + 2 * size, 30 * size, 8 * size);
+                    ctx.fillRect(cloud.x - 3 * size, cloud.y + 12 * size, 36 * size, 8 * size);
+                }
+            }
+        }
+        
+        function drawGroundBlock(x, y) {
+            ctx.fillStyle = '#D2691E';
+            ctx.fillRect(x, y, 32, 32);
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x, y, 32, 4);
+            ctx.fillRect(x, y + 28, 32, 4);
+            ctx.fillRect(x, y, 4, 32);
+            ctx.fillRect(x + 28, y, 4, 32);
+        }
+        
+        function drawGrassBlock(x, y) {
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(x, y, 32, 32);
+            ctx.fillStyle = '#32CD32';
+            ctx.fillRect(x, y, 32, 6);
+            ctx.fillStyle = '#90EE90';
+            for (let i = 0; i < 8; i++) {
+                let grassX = x + i * 4;
+                ctx.fillRect(grassX, y, 2, 4);
+                ctx.fillRect(grassX + 1, y - 2, 2, 2);
+            }
+        }
+        
+        function drawQuestionBlock(x, y) {
+            const brightness = 0.8 + 0.2 * Math.sin(Date.now() * 0.003);
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(x, y, 32, 32);
+            ctx.fillStyle = '#FFA500';
+            ctx.fillRect(x, y, 32, 4);
+            ctx.fillRect(x, y, 4, 32);
+            ctx.fillStyle = `rgba(255, 140, 0, ${brightness})`;
+            ctx.font = 'bold 16px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('?', x + 16, y + 22);
+        }
+        
+        function drawUsedBlock(x, y) {
+            ctx.fillStyle = '#A9A9A9';
+            ctx.fillRect(x, y, 32, 32);
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(x + 28, y + 4, 4, 28);
+            ctx.fillRect(x + 4, y + 28, 28, 4);
+        }
+        
+        function drawBall(x, y, type) {
+            const colors = { 
+                red: { main: '#FF4444', light: '#FF8888', dark: '#CC2222', highlight: '#FFAAAA' },
+                blue: { main: '#4444FF', light: '#8888FF', dark: '#2222CC', highlight: '#AAAAFF' }, 
+                pink: { main: '#FF69B4', light: '#FF99D4', dark: '#CC4A8A', highlight: '#FFAAE4' }
+            };
+            
+            const ballColor = colors[type];
+            const centerX = x + 8;
+            const centerY = y + 8;
+            
+            // Main ball body
+            ctx.fillStyle = ballColor.main;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Gradient effect
+            ctx.fillStyle = ballColor.light;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Highlight
+            ctx.fillStyle = ballColor.highlight;
+            ctx.beginPath();
+            ctx.arc(centerX - 2, centerY - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Shine
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(centerX - 3, centerY - 3, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawGoomba(x, y) {
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x + 2, y, 28, 16);
+            ctx.fillRect(x, y + 16, 32, 16);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + 8, y + 20, 4, 4);
+            ctx.fillRect(x + 20, y + 20, 4, 4);
+            ctx.fillRect(x + 12, y + 26, 8, 2);
+        }
+        
+        function drawSpikyEnemy(x, y) {
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(x + 4, y, 24, 16);
+            ctx.fillRect(x, y + 16, 32, 16);
+            
+            ctx.fillStyle = '#654321';
+            for (let i = 0; i < 24; i += 6) {
+                ctx.beginPath();
+                ctx.moveTo(x + 4 + i, y);
+                ctx.lineTo(x + 4 + i + 3, y - 6);
+                ctx.lineTo(x + 4 + i + 6, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(x + 8, y + 20, 4, 4);
+            ctx.fillRect(x + 20, y + 20, 4, 4);
+        }
+        
+        function drawFastEnemy(x, y) {
+            ctx.fillStyle = '#4B0082';
+            ctx.fillRect(x + 4, y, 24, 16);
+            ctx.fillRect(x, y + 16, 32, 16);
+            
+            ctx.strokeStyle = '#9370DB';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y + 8);
+            ctx.lineTo(x - 4, y + 8);
+            ctx.moveTo(x - 6, y + 12);
+            ctx.lineTo(x - 2, y + 12);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(x + 8, y + 20, 4, 4);
+            ctx.fillRect(x + 20, y + 20, 4, 4);
+        }
+        
+        function drawCannonEnemy(x, y) {
+            // Base
+            ctx.fillStyle = '#2F4F4F';
+            ctx.fillRect(x, y + 16, 32, 16);
+            
+            // Cannon body
+            ctx.fillStyle = '#708090';
+            ctx.fillRect(x + 8, y + 8, 16, 16);
+            
+            // Cannon barrel
+            ctx.fillStyle = '#2F4F4F';
+            ctx.fillRect(x + 24, y + 12, 12, 8);
+            
+            // Wheels
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(x + 4, y + 28, 6, 4);
+            ctx.fillRect(x + 22, y + 28, 6, 4);
+            
+            // Details
+            ctx.fillStyle = '#FF4500';
+            ctx.fillRect(x + 12, y + 12, 8, 8);
+        }
+        
+        function drawJumperEnemy(x, y) {
+            // Body (spring-like)
+            ctx.fillStyle = '#32CD32';
+            ctx.fillRect(x + 6, y + 8, 20, 16);
+            ctx.fillRect(x + 2, y + 16, 28, 16);
+            
+            // Spring coils
+            ctx.strokeStyle = '#228B22';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const springY = y + 10 + i * 3;
+                ctx.moveTo(x + 8, springY);
+                ctx.lineTo(x + 12, springY - 1);
+                ctx.lineTo(x + 16, springY);
+                ctx.lineTo(x + 20, springY - 1);
+                ctx.lineTo(x + 24, springY);
+            }
+            ctx.stroke();
+            
+            // Eyes
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x + 10, y + 18, 4, 4);
+            ctx.fillRect(x + 18, y + 18, 4, 4);
+            
+            // Pupils
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + 11, y + 19, 2, 2);
+            ctx.fillRect(x + 19, y + 19, 2, 2);
+            
+            // Base/feet
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(x + 4, y + 30, 6, 2);
+            ctx.fillRect(x + 22, y + 30, 6, 2);
+        }
+        
+        function drawProjectile(x, y) {
+            ctx.fillStyle = '#FF4500';
+            ctx.fillRect(x, y, 8, 8);
+            ctx.fillStyle = '#FF6347';
+            ctx.fillRect(x + 1, y + 1, 6, 6);
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(x + 2, y + 2, 4, 4);
+        }
+        
+        function drawSpikes(x, y, width) {
+            ctx.fillStyle = '#696969';
+            ctx.fillRect(x, y + 20, width, 8);
+            
+            ctx.fillStyle = '#808080';
+            for (let i = 0; i < width; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y + 20);
+                ctx.lineTo(x + i + 4, y + 10);
+                ctx.lineTo(x + i + 8, y + 20);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function drawLevelEnd() {
+            // Stable building
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(levelEnd.stable.x, levelEnd.stable.y, levelEnd.stable.width, levelEnd.stable.height);
+            
+            // Roof
+            ctx.fillStyle = '#800000';
+            ctx.fillRect(levelEnd.stable.x - 10, levelEnd.stable.y - 20, levelEnd.stable.width + 20, 25);
+            
+            // Door
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(levelEnd.door.x, levelEnd.door.y, levelEnd.door.width, levelEnd.door.height);
+            
+            // Door frame
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(levelEnd.door.x, levelEnd.door.y, levelEnd.door.width, levelEnd.door.height);
+            
+            // Windows
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(levelEnd.stable.x + 30, levelEnd.stable.y + 30, 20, 20);
+            ctx.fillRect(levelEnd.stable.x + 150, levelEnd.stable.y + 30, 20, 20);
+            
+            // Sign
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(levelEnd.sign.x, levelEnd.sign.y, 50, 30);
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('HOME', levelEnd.sign.x + 25, levelEnd.sign.y + 20);
+            
+            // Hay bales
+            ctx.fillStyle = '#DAA520';
+            for (let hay of levelEnd.hay) {
+                ctx.fillRect(hay.x, hay.y, 20, 18);
+                ctx.strokeStyle = '#B8860B';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(hay.x, hay.y, 20, 18);
+            }
+        }
+        
+        function drawLamumu(x, y, facingRight) {
+            // Animation based on movement
+            const walkCycle = Math.floor(Date.now() * 0.01) % 4;
+            const isMoving = Math.abs(player.velX) > 0.5;
+            
+            // Main body (more cow-like proportions)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x + 1, y + 14, 30, 18);
+            
+            // Body shading
+            ctx.fillStyle = '#F5F5F5';
+            ctx.fillRect(x + 1, y + 30, 30, 2);
+            ctx.fillRect(x + 29, y + 16, 2, 14);
+            
+            // Head (bigger and more detailed)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x + 4, y + 2, 24, 16);
+            
+            // Head shading
+            ctx.fillStyle = '#F5F5F5';
+            ctx.fillRect(x + 26, y + 4, 2, 12);
+            ctx.fillRect(x + 6, y + 16, 20, 2);
+            
+            // Snout/muzzle (more prominent)
+            ctx.fillStyle = '#F0F0F0';
+            if (facingRight) {
+                ctx.fillRect(x + 26, y + 8, 8, 8);
+                // Snout shading
+                ctx.fillStyle = '#E8E8E8';
+                ctx.fillRect(x + 32, y + 10, 2, 4);
+            } else {
+                ctx.fillRect(x - 2, y + 8, 8, 8);
+                // Snout shading
+                ctx.fillStyle = '#E8E8E8';
+                ctx.fillRect(x - 2, y + 10, 2, 4);
+            }
+            
+            // Horns (more detailed)
+            ctx.fillStyle = '#D2691E';
+            ctx.fillRect(x + 8, y - 1, 3, 5);
+            ctx.fillRect(x + 21, y - 1, 3, 5);
+            // Horn tips
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x + 9, y - 1, 1, 2);
+            ctx.fillRect(x + 22, y - 1, 1, 2);
+            
+            // Ears (more realistic)
+            ctx.fillStyle = '#FFB6C1';
+            if (facingRight) {
+                ctx.fillRect(x + 2, y + 4, 6, 8);
+                ctx.fillRect(x + 28, y + 4, 4, 6);
+                // Inner ear
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(x + 4, y + 6, 2, 4);
+            } else {
+                ctx.fillRect(x + 2, y + 4, 4, 6);
+                ctx.fillRect(x + 24, y + 4, 6, 8);
+                // Inner ear
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(x + 26, y + 6, 2, 4);
+            }
+            
+            // Black cow spots (more realistic pattern)
+            ctx.fillStyle = '#000000';
+            // Large body spot
+            ctx.fillRect(x + 3, y + 16, 10, 8);
+            ctx.fillRect(x + 5, y + 14, 6, 2);
+            // Medium spots
+            ctx.fillRect(x + 18, y + 18, 8, 10);
+            ctx.fillRect(x + 20, y + 16, 4, 2);
+            // Small spots
+            ctx.fillRect(x + 12, y + 24, 6, 4);
+            ctx.fillRect(x + 26, y + 20, 4, 6);
+            // Head spots
+            ctx.fillRect(x + 6, y + 4, 8, 6);
+            ctx.fillRect(x + 8, y + 2, 4, 2);
+            ctx.fillRect(x + 18, y + 6, 6, 8);
+            ctx.fillRect(x + 20, y + 4, 2, 2);
+            
+            // Eyes (more expressive)
+            ctx.fillStyle = '#FFFFFF';
+            if (facingRight) {
+                // Eye whites
+                ctx.fillRect(x + 16, y + 6, 5, 4);
+                ctx.fillRect(x + 22, y + 6, 5, 4);
+            } else {
+                ctx.fillRect(x + 5, y + 6, 5, 4);
+                ctx.fillRect(x + 11, y + 6, 5, 4);
+            }
+            
+            // Eye pupils (animated)
+            ctx.fillStyle = '#000000';
+            const eyeOffset = isMoving && walkCycle < 2 ? 1 : 0;
+            if (facingRight) {
+                ctx.fillRect(x + 17 + eyeOffset, y + 7, 2, 2);
+                ctx.fillRect(x + 23 + eyeOffset, y + 7, 2, 2);
+            } else {
+                ctx.fillRect(x + 7 - eyeOffset, y + 7, 2, 2);
+                ctx.fillRect(x + 13 - eyeOffset, y + 7, 2, 2);
+            }
+            
+            // Eye shine
+            ctx.fillStyle = '#FFFFFF';
+            if (facingRight) {
+                ctx.fillRect(x + 18, y + 7, 1, 1);
+                ctx.fillRect(x + 24, y + 7, 1, 1);
+            } else {
+                ctx.fillRect(x + 7, y + 7, 1, 1);
+                ctx.fillRect(x + 13, y + 7, 1, 1);
+            }
+            
+            // Nostrils (more detailed)
+            ctx.fillStyle = '#000000';
+            if (facingRight) {
+                ctx.fillRect(x + 28, y + 10, 1, 2);
+                ctx.fillRect(x + 30, y + 11, 1, 1);
+                ctx.fillRect(x + 28, y + 13, 1, 2);
+                ctx.fillRect(x + 30, y + 14, 1, 1);
+            } else {
+                ctx.fillRect(x + 3, y + 10, 1, 2);
+                ctx.fillRect(x + 1, y + 11, 1, 1);
+                ctx.fillRect(x + 3, y + 13, 1, 2);
+                ctx.fillRect(x + 1, y + 14, 1, 1);
+            }
+            
+            // Legs (animated walking)
+            ctx.fillStyle = '#FFFFFF';
+            let legOffset = 0;
+            if (isMoving) {
+                legOffset = walkCycle < 2 ? 1 : -1;
+            }
+            
+            // Front legs
+            ctx.fillRect(x + 6, y + 32, 4, 2);
+            ctx.fillRect(x + 12 + legOffset, y + 32, 4, 2);
+            // Back legs  
+            ctx.fillRect(x + 18 - legOffset, y + 32, 4, 2);
+            ctx.fillRect(x + 24, y + 32, 4, 2);
+            
+            // Hooves (more detailed)
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(x + 6, y + 32, 4, 2);
+            ctx.fillRect(x + 12 + legOffset, y + 32, 4, 2);
+            ctx.fillRect(x + 18 - legOffset, y + 32, 4, 2);
+            ctx.fillRect(x + 24, y + 32, 4, 2);
+            
+            // Hoof splits
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x + 7, y + 32, 1, 2);
+            ctx.fillRect(x + 13 + legOffset, y + 32, 1, 2);
+            ctx.fillRect(x + 19 - legOffset, y + 32, 1, 2);
+            ctx.fillRect(x + 25, y + 32, 1, 2);
+            
+            // Tail (more dynamic and detailed)
+            ctx.fillStyle = '#FFFFFF';
+            const tailSway = Math.sin(Date.now() * 0.008) * 3;
+            if (facingRight) {
+                ctx.fillRect(x - 6 + tailSway, y + 18, 8, 3);
+                ctx.fillRect(x - 4 + tailSway, y + 21, 4, 6);
+                // Tail tuft
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(x - 8 + tailSway, y + 24, 8, 4);
+                ctx.fillRect(x - 6 + tailSway, y + 26, 4, 3);
+            } else {
+                ctx.fillRect(x + 30 - tailSway, y + 18, 8, 3);
+                ctx.fillRect(x + 32 - tailSway, y + 21, 4, 6);
+                // Tail tuft
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(x + 32 - tailSway, y + 24, 8, 4);
+                ctx.fillRect(x + 34 - tailSway, y + 26, 4, 3);
+            }
+            
+            // Udder (when not facing right, more detailed)
+            if (!facingRight) {
+                ctx.fillStyle = '#FFB6C1';
+                ctx.fillRect(x + 12, y + 28, 8, 6);
+                // Udder details
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(x + 14, y + 32, 1, 2);
+                ctx.fillRect(x + 16, y + 32, 1, 2);
+                ctx.fillRect(x + 18, y + 32, 1, 2);
+            }
+        }
+        
+        function gameLoop() {
+            if (gameState === 'playing') {
+                update();
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+    </script>
+</body>
+</html>
